@@ -1,0 +1,517 @@
+
+
+<!DOCTYPE html>
+
+<html lang="nl">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+<title>Urban Empire</title>
+
+<style>
+
+*{box-sizing:border-box}
+
+body{margin:0;background:#090b12;color:white;font-family:Arial,sans-serif;overflow:hidden}
+
+#game{position:fixed;inset:0}
+
+canvas{display:block;width:100%;height:100%}
+
+#top{position:fixed;top:0;left:0;right:0;padding:12px;background:linear-gradient(#080910dd,transparent);pointer-events:none}
+
+h1{font-size:22px;letter-spacing:2px;margin:0;color:#c7a4ff}
+
+#subtitle{font-size:11px;color:#bbb;margin-top:3px}
+
+.bars{display:flex;gap:12px;margin-top:12px}
+
+.barbox{flex:1;max-width:240px;font-size:11px}
+
+.track{height:10px;background:#373744;border-radius:10px;overflow:hidden;margin-top:4px}
+
+.fill{height:100%;width:100%;background:#42e68c;transition:width .15s}
+
+#enemyFill{background:#fa4268}
+
+#buttons{position:fixed;bottom:20px;left:0;right:0;display:flex;justify-content:space-between;align-items:end;padding:0 18px;pointer-events:none}
+
+.group{display:flex;gap:9px;align-items:end;pointer-events:auto}
+
+button{color:white;background:#242535;border:1px solid #696080;border-radius:14px;font-weight:bold;touch-action:none;user-select:none;-webkit-user-select:none}
+
+.control{width:57px;height:57px;font-size:20px;background:#29243b}
+
+.attack{width:72px;height:72px;border-radius:50%;background:#8735a9;font-size:13px}
+
+#special{background:#b43c57}
+
+#message{position:fixed;top:43%;left:0;right:0;text-align:center;font-size:24px;font-weight:bold;text-shadow:0 2px 10px black;pointer-events:none}
+
+#labelBtn{position:fixed;top:12px;right:12px;padding:11px;background:#633ab4;pointer-events:auto}
+
+#labelPanel,#startPanel{position:fixed;inset:0;background:#080910ed;display:flex;align-items:center;justify-content:center;padding:20px;z-index:5}
+
+.card{width:min(420px,100%);background:#1a1b29;border:1px solid #63517e;border-radius:18px;padding:22px;max-height:90vh;overflow:auto}
+
+.card h2{color:#c7a4ff;margin-top:0}
+
+.card p{color:#d2d2dc;line-height:1.5;font-size:14px}
+
+.action{padding:13px 16px;background:#7044c4;margin:5px 3px 5px 0}
+
+.secondary{padding:12px;margin:5px 3px 5px 0}
+
+.hidden{display:none!important}
+
+#hint{position:fixed;bottom:110px;left:0;right:0;text-align:center;font-size:11px;color:#ddd;text-shadow:0 2px 5px black;pointer-events:none}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="game"></div>
+
+<div id="top">
+
+<h1>URBAN EMPIRE</h1>
+
+<div id="subtitle">STREET FIGHTING • MUSIC • POWER</div>
+
+<div class="bars">
+
+ <div class="barbox">JOUW VECHTER<div class="track"><div id="playerFill" class="fill"></div></div></div>
+
+ <div class="barbox" style="text-align:right">RIVAAL<div class="track"><div id="enemyFill" class="fill"></div></div></div>
+
+</div>
+
+</div>
+
+<button id="labelBtn">🎤 LABEL</button>
+
+<div id="message">URBAN EMPIRE</div>
+
+<div id="hint">Beweeg met de pijlen • Gebruik PUNCH om aan te vallen</div>
+
+<div id="buttons">
+
+ <div class="group">
+
+  <button class="control" data-move="forward">▲</button>
+
+  <button class="control" data-move="left">◀</button>
+
+  <button class="control" data-move="back">▼</button>
+
+  <button class="control" data-move="right">▶</button>
+
+ </div>
+
+ <div class="group">
+
+  <button class="attack" id="block">BLOCK</button>
+
+  <button class="attack" id="punch">PUNCH</button>
+
+  <button class="attack" id="special">POWER</button>
+
+ </div>
+
+</div>
+
+<div id="startPanel">
+
+ <div class="card">
+
+  <h2>🔥 URBAN EMPIRE</h2>
+
+  <p>Van de straat naar de top. Bouw je eigen hiphoplabel en bewijs jezelf in de arena.</p>
+
+  <p><b>Prototype 1</b><br>3D-arena • Vechtbesturing • Rivalen • Labelmanagement</p>
+
+  <button class="action" id="startBtn">START GAME</button>
+
+  <p style="font-size:11px">Dit is een eerste prototype. Je voortgang wordt lokaal op dit apparaat opgeslagen.</p>
+
+ </div>
+
+</div>
+
+<div id="labelPanel" class="hidden">
+
+ <div class="card">
+
+  <h2>🎤 JOUW LABEL</h2>
+
+  <p>Label: <b>Urban Empire Records</b></p>
+
+  <p>Cash: €<span id="cash">500</span></p>
+
+  <p>Fans: <span id="fans">100</span></p>
+
+  <p>Artiesten: <span id="artists">1</span></p>
+
+  <hr style="border-color:#444">
+
+  <h3>Artiesten scouten</h3>
+
+  <p>Nieuwe artiesten kunnen je label groter maken. Je hebt €250 nodig.</p>
+
+  <button class="action" id="recruit">CONTRACT €250</button>
+
+  <button class="secondary" id="release">RELEASE TRACK</button>
+
+  <button class="secondary" id="closeLabel">TERUG NAAR GAME</button>
+
+  <p id="labelMessage" style="font-size:12px"></p>
+
+ </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+
+<script>
+
+(()=>{
+
+const $=id=>document.getElementById(id);
+
+if(!window.THREE){
+
+ $("message").textContent="Kan 3D-engine niet laden";
+
+ return;
+
+}
+
+const scene=new THREE.Scene();
+
+scene.background=new THREE.Color(0x10101c);
+
+scene.fog=new THREE.Fog(0x10101c,16,38);
+
+const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,100);
+
+camera.position.set(0,7,12);
+
+const renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:"low-power"});
+
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+
+renderer.setSize(innerWidth,innerHeight);
+
+renderer.shadowMap.enabled=false;
+
+$("game").appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xb6caff,0x302033,2));
+
+const light=new THREE.DirectionalLight(0xffffff,2.4);
+
+light.position.set(-4,9,6);scene.add(light);
+
+const floor=new THREE.Mesh(
+
+ new THREE.PlaneGeometry(24,24),
+
+ new THREE.MeshStandardMaterial({color:0x242431,roughness:.95})
+
+);
+
+floor.rotation.x=-Math.PI/2;floor.position.y=-.04;scene.add(floor);
+
+const grid=new THREE.GridHelper(24,24,0x7546a9,0x393346);
+
+grid.position.y=.01;scene.add(grid);
+
+function box(parent,w,h,d,color,x,y,z){
+
+ const mesh=new THREE.Mesh(
+
+  new THREE.BoxGeometry(w,h,d),
+
+  new THREE.MeshStandardMaterial({color,roughness:.72})
+
+ );
+
+ mesh.position.set(x,y,z);parent.add(mesh);return mesh;
+
+}
+
+function makeFighter(color,skin){
+
+ const g=new THREE.Group();
+
+ const parts={};
+
+ parts.body=box(g,.85,1.15,.43,color,0,1.65,0);
+
+ parts.head=box(g,.55,.58,.5,skin,0,2.52,0);
+
+ parts.hair=box(g,.59,.17,.53,0x17151b,0,2.87,0);
+
+ parts.leftArm=box(g,.25,.88,.3,color,-.62,1.65,0);
+
+ parts.rightArm=box(g,.25,.88,.3,color,.62,1.65,0);
+
+ parts.leftLeg=box(g,.31,.88,.36,0x20212d,-.25,.48,0);
+
+ parts.rightLeg=box(g,.31,.88,.36,0x20212d,.25,.48,0);
+
+ parts.fistL=box(g,.3,.3,.32,skin,-.62,1.17,.03);
+
+ parts.fistR=box(g,.3,.3,.32,skin,.62,1.17,.03);
+
+ g.userData.parts=parts;scene.add(g);return g;
+
+}
+
+const player=makeFighter(0x7b3fe4,0xb97851);
+
+const enemy=makeFighter(0xd83b5c,0x87583f);
+
+player.position.set(-2,0,1);
+
+enemy.position.set(2,0,-1);
+
+enemy.rotation.y=Math.PI;
+
+let hp=100,ehp=100,cash=500,fans=100,artists=1;
+
+let playing=false,blocking=false,step=0,attackCooldown=0,enemyCooldown=0;
+
+const held={};
+
+function updateBars(){
+
+ $("playerFill").style.width=Math.max(0,hp)+"%";
+
+ $("enemyFill").style.width=Math.max(0,ehp)+"%";
+
+ $("cash").textContent=cash;$("fans").textContent=fans;$("artists").textContent=artists;
+
+}
+
+function say(t){$("message").textContent=t}
+
+function move(dir){
+
+ if(!playing||$("labelPanel").classList.contains("hidden")===false)return;
+
+ const speed=.16;
+
+ if(dir==="forward")player.position.z-=speed;
+
+ if(dir==="back")player.position.z+=speed;
+
+ if(dir==="left")player.position.x-=speed;
+
+ if(dir==="right")player.position.x+=speed;
+
+ player.position.x=THREE.MathUtils.clamp(player.position.x,-8,8);
+
+ player.position.z=THREE.MathUtils.clamp(player.position.z,-8,8);
+
+}
+
+function attack(power){
+
+ if(!playing||attackCooldown>0||hp<=0||ehp<=0)return;
+
+ const dist=player.position.distanceTo(enemy.position);
+
+ if(dist<2.65){
+
+  ehp=Math.max(0,ehp-power);
+
+  enemy.position.x+=Math.sign(enemy.position.x-player.position.x)*.3;
+
+  enemy.rotation.y=Math.atan2(player.position.x-enemy.position.x,player.position.z-enemy.position.z);
+
+  say(power>15?"💥 POWER HIT!":"👊 HIT!");
+
+  if(ehp===0){say("🏆 JIJ WINT! +€300");cash+=300;fans+=75;playing=false;updateBars()}
+
+ }else say("Kom dichterbij!");
+
+ attackCooldown=power>15?1.1:.55;updateBars();
+
+}
+
+function enemyAI(dt){
+
+ if(!playing||ehp<=0||hp<=0)return;
+
+ const dx=player.position.x-enemy.position.x,dz=player.position.z-enemy.position.z;
+
+ const d=Math.hypot(dx,dz);
+
+ if(d>1.35){enemy.position.x+=dx/d*.85*dt;enemy.position.z+=dz/d*.85*dt}
+
+ enemy.rotation.y=Math.atan2(dx,dz);
+
+ enemyCooldown-=dt;
+
+ if(d<1.65&&enemyCooldown<=0){
+
+  if(!blocking)hp=Math.max(0,hp-7);
+
+  enemyCooldown=1.1;updateBars();
+
+  if(hp===0){say("💀 JE BENT VERSLAGEN");playing=false}
+
+ }
+
+}
+
+function animate(){
+
+ requestAnimationFrame(animate);
+
+ const dt=Math.min(clock.getDelta(),.05);
+
+ if(attackCooldown>0)attackCooldown-=dt;
+
+ enemyAI(dt);
+
+ if(held.forward)move("forward");
+
+ if(held.back)move("back");
+
+ if(held.left)move("left");
+
+ if(held.right)move("right");
+
+ const target=new THREE.Vector3(player.position.x*.3,5.7,player.position.z+9);
+
+ camera.position.lerp(target,.04);
+
+ camera.lookAt(player.position.x,1,player.position.z-1);
+
+ renderer.render(scene,camera);
+
+}
+
+const clock=new THREE.Clock();
+
+document.querySelectorAll("[data-move]").forEach(b=>{
+
+ const dir=b.dataset.move;
+
+ b.addEventListener("pointerdown",e=>{e.preventDefault();held[dir]=true;move(dir)});
+
+ ["pointerup","pointercancel","pointerleave"].forEach(ev=>b.addEventListener(ev,()=>held[dir]=false));
+
+});
+
+$("punch").onpointerdown=e=>{e.preventDefault();attack(10)};
+
+$("special").onpointerdown=e=>{e.preventDefault();attack(22)};
+
+$("block").addEventListener("pointerdown",e=>{e.preventDefault();blocking=true;$("block").style.background="#277e67"});
+
+["pointerup","pointercancel","pointerleave"].forEach(ev=>$("block").addEventListener(ev,()=>{blocking=false;$("block").style.background=""}));
+
+addEventListener("keydown",e=>{
+
+ const k=e.key.toLowerCase();
+
+ if(["w","arrowup"].includes(k))held.forward=true;
+
+ if(["s","arrowdown"].includes(k))held.back=true;
+
+ if(["a","arrowleft"].includes(k))held.left=true;
+
+ if(["d","arrowright"].includes(k))held.right=true;
+
+ if(k===" "){e.preventDefault();attack(10)}
+
+ if(k==="j")attack(22);
+
+});
+
+addEventListener("keyup",e=>{
+
+ const k=e.key.toLowerCase();
+
+ if(["w","arrowup"].includes(k))held.forward=false;
+
+ if(["s","arrowdown"].includes(k))held.back=false;
+
+ if(["a","arrowleft"].includes(k))held.left=false;
+
+ if(["d","arrowright"].includes(k))held.right=false;
+
+});
+
+$("startBtn").onclick=()=>{
+
+ $("startPanel").classList.add("hidden");playing=true;hp=100;ehp=100;
+
+ player.position.set(-2,0,1);enemy.position.set(2,0,-1);
+
+ updateBars();say("VECHT!");
+
+};
+
+$("labelBtn").onclick=()=>$("labelPanel").classList.remove("hidden");
+
+$("closeLabel").onclick=()=>$("labelPanel").classList.add("hidden");
+
+$("recruit").onclick=()=>{
+
+ if(cash<250){$("labelMessage").textContent="Niet genoeg geld.";return}
+
+ cash-=250;artists++;fans+=50;updateBars();
+
+ $("labelMessage").textContent="Nieuwe artiest getekend! +50 fans.";
+
+};
+
+$("release").onclick=()=>{
+
+ cash+=100;fans+=150;updateBars();
+
+ $("labelMessage").textContent="Track uitgebracht! +€100 en +150 fans.";
+
+};
+
+addEventListener("resize",()=>{
+
+ camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+
+ renderer.setSize(innerWidth,innerHeight);
+
+});
+
+try{
+
+ const data=JSON.parse(localStorage.getItem("urbanEmpireSave")||"null");
+
+ if(data){cash=data.cash||500;fans=data.fans||100;artists=data.artists||1;updateBars()}
+
+}catch(e){}
+
+setInterval(()=>{
+
+ try{localStorage.setItem("urbanEmpireSave",JSON.stringify({cash,fans,artists}))}catch(e){}
+
+},2000);
+
+updateBars();animate();
+
+})();
+
+</script>
+
+</body>
+
+</html>
